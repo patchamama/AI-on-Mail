@@ -33,6 +33,8 @@ git clone https://github.com/yourusername/AIOnMail.git
 cd AIOnMail
 
 # Install dependencies
+python3 -m venv env
+source env/bin/activate  # On Windows use `env\Scripts\activate`
 pip3 install -r requirements.txt
 ```
 
@@ -41,6 +43,7 @@ Create a `.env` file with your credentials and configuration:
 ```env
 # AI API Configuration
 OPENAI_API_KEY=your-openai-api-key-here
+GEMINI_API_KEY=your-gemini-api-key-here
 
 # Email Configuration
 EMAIL_ADDRESS=your-email@gmail.com
@@ -56,8 +59,18 @@ SMTP_PORT=587
 # AI_KEYWORDS=AI,IA,Artificial Intelligence,Machine Learning,ChatGPT, Bot, Inteligencia Artificial
 ```
 
+### API Keys
+
+For OpenAI, you can use models like `gpt-3.5-turbo` or `gpt-4`. For Gemini, ensure you have access to the appropriate model as per your subscription level but for basic usage, the default settings should suffice and work well with the gratis tier.
+
+To generate an Api key for OpenAI, visit [OpenAI's API page](https://platform.openai.com/account/api-keys).
+To generate an Api key for Gemini, visit [Gemini's API page](https://makersuite.google.com/app/apikey).
+
 ## Execution
 ```bash
+# Activate the virtual environment
+source env/bin/activate  # On Windows use `env\Scripts\activate`
+# Run the script
 python3 AIOnMail.py
 ```
 
