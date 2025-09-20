@@ -66,6 +66,16 @@ For OpenAI, you can use models like `gpt-3.5-turbo` or `gpt-4`. For Gemini, ensu
 To generate an Api key for OpenAI, visit [OpenAI's API page](https://platform.openai.com/account/api-keys).
 To generate an Api key for Gemini, visit [Gemini's API page](https://makersuite.google.com/app/apikey).
 
+### Setting Up Ollama
+1. Install Ollama by following the instructions at [Ollama's official site](https://ollama.com/docs/installation).
+2. Download and set up your preferred models (e.g., `llama2`, `gpt-oss:20b`, etc.) using the Ollama CLI. For example:
+   ```bash
+   ollama pull llama2
+   ollama pull gpt-oss:20b
+   ```
+3. Ensure your Ollama server is running and accessible. `ollama serve` should be active.
+4. You can specify the Ollama model in the script (e.g., `llama2`, `gpt-oss:20b`, etc.).    
+
 ## Execution
 ```bash
 # Activate the virtual environment
