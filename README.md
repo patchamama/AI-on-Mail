@@ -33,34 +33,32 @@ git clone https://github.com/yourusername/AIOnMail.git
 cd AIOnMail
 
 # Install dependencies
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ## Configuration
 Create a `.env` file with your credentials and configuration:
 ```env
-IMAP_HOST=imap.example.com
-IMAP_PORT=993
-IMAP_USER=user@example.com
-IMAP_PASS=password
+# AI API Configuration
+OPENAI_API_KEY=your-openai-api-key-here
 
-SMTP_HOST=smtp.example.com
-SMTP_PORT=465
-SMTP_USER=user@example.com
-SMTP_PASS=password
+# Email Configuration
+EMAIL_ADDRESS=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password-here
 
-AI_MODE=openai  # or "ollama"
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o
+# Optional Email Server Settings (defaults provided)
+IMAP_SERVER=imap.gmail.com
+POP3_SERVER=pop.gmail.com
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
 
-# For local Ollama
-OLLAMA_API_BASE=http://localhost:11434
-OLLAMA_MODEL=llama3.2
+# Optional: Customize AI keywords (comma-separated)
+# AI_KEYWORDS=AI,IA,Artificial Intelligence,Machine Learning,ChatGPT, Bot, Inteligencia Artificial
 ```
 
 ## Execution
 ```bash
-python AIOnMail.py
+python3 AIOnMail.py
 ```
 
 The script will enter a loop, checking the inbox and automatically replying to new queries.
