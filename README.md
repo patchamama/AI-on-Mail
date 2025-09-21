@@ -217,7 +217,7 @@ processor.monitor_emails(
 
 ### Email filtering
 
-The system searches for these keywords by default:
+The system searches for these keywords by default in the email subject:
 - AI, IA
 - Artificial Intelligence / Inteligencia Artificial
 - Machine Learning
@@ -300,6 +300,18 @@ python3 -c "from ai_email_processor.ai_providers import get_available_providers;
 4. **"No emails with keywords"**
    - Check `AI_KEYWORDS` configuration
    - Keywords are searched in email subject
+
+5. **"SMTP send error"**
+   - Verify SMTP server and port
+   - Check email credentials
+
+6. **"Rate limit exceeded" or Error in ChatGPT request: 429 Client Error: Too Many Requests for url: https://api.openai.com/v1/chat/completions**
+   - For OpenAI/Gemini, check usage limits or quotas on your account
+   - Maybe you are sending too many requests in a short period
+   - The credits in your account may be exhausted
+   - Reduce frequency of email checks
+   - Use lower-capacity models if available
+   - Implement backoff strategies if needed
 
 ### Diagnostic logs
 
