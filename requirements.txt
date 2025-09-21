@@ -1,5 +1,6 @@
-requests>=2.28.0
+requests>=2.31.0
 python-dotenv>=1.0.0
 pymupdf>=1.23.0
-PyPDF2>=3.0.0
+PyPDF2>=3.0.1
 python-docx>=0.8.11
+setuptools>=67.6.1
