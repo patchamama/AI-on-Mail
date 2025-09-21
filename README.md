@@ -118,7 +118,7 @@ SMTP_PORT=587
 # Activate the virtual environment
 source env/bin/activate  # On Windows use `env\Scripts\activate`
 # Run the script
-python3 AIOnMail.py
+python3 main.py
 ```
 
 The script will enter a loop, checking the inbox and automatically replying to new queries.
