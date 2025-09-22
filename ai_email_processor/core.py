@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
-from .ai_providers import get_available_providers, get_provider_by_name
+from .ai_providers import get_available_providers, get_provider_by_name, query_with_fallback
 from .document_parser import DocumentParser
 from .email_client import EmailClient
 
@@ -29,7 +29,7 @@ class EmailAIProcessor:
         # Initialize components
         self.email_client = EmailClient(self.config)
         self.document_parser = DocumentParser(
-            max_size=self.config.get('max_document_size', 10000)
+            max_size=self.config.get('MAX_DOCUMENT_SIZE', 10000)
         )
         
         # Validate configuration
@@ -173,6 +173,96 @@ class EmailAIProcessor:
         
         return "".join(prompt_parts)
     
+    # def process_single_email(self, mail, email_id: bytes, 
+    #                        ai_provider_name: str, ai_model: str = "") -> bool:
+    #     """
+    #     Process individual email
+        
+    #     Args:
+    #         mail: Active IMAP connection
+    #         email_id (bytes): Email ID
+    #         ai_provider_name (str): AI provider name
+    #         ai_model (str): Specific model (optional)
+            
+    #     Returns:
+    #         bool: True if processed successfully
+    #     """
+    #     try:
+    #         # Get message
+    #         msg = self.email_client.fetch_email(mail, email_id)
+    #         if not msg:
+    #             return False
+            
+    #         # Extract email information
+    #         subject = self.email_client.decode_subject(msg.get('Subject', ''))
+    #         sender = msg.get('From', '')
+            
+    #         print(f"\nProcessing email:")
+    #         print(f"   From: {sender}")
+    #         print(f"   Subject: {subject}")
+            
+    #         # Check AI keywords
+    #         if not self.email_client.has_ai_keywords(subject):
+    #             print("   No AI keywords found, skipping...")
+    #             return False
+            
+    #         print("   AI keywords detected!")
+            
+    #         # Extract email body
+    #         body = self.email_client.get_email_body(msg)
+            
+    #         # Process attachments
+    #         print("   Checking attachments...")
+    #         attachments = self.document_parser.process_email_attachments(msg)
+            
+    #         if attachments:
+    #             print(f"   {len(attachments)} attachment(s) processed")
+    #             for att in attachments:
+    #                 print(f"      • {att['filename']} ({att['size']} characters)")
+            
+    #         # Check if there is content to process
+    #         if not body.strip() and not attachments:
+    #             print("   No content to process")
+    #             return False
+            
+    #         # Prepare AI prompt
+    #         ai_prompt = self.prepare_ai_prompt(body, attachments)
+    #         print(f"   Prompt prepared ({len(ai_prompt)} characters)")
+            
+    #         # Get AI provider
+    #         ai_provider = get_provider_by_name(ai_provider_name)
+    #         if not ai_provider:
+    #             print(f"   AI provider '{ai_provider_name}' not available")
+    #             return False
+            
+    #         # Query AI
+    #         ai_response = ai_provider.query(ai_prompt, model=ai_model)
+    #         if not ai_response:
+    #             print("   No AI response obtained")
+    #             return False
+    #         else:
+    #             print(f"   AI response obtained ({len(ai_response)} characters)")
+    #             # Debug: print AI response (optional)
+    #             ai_response += f"\n\n\n Model used: {ai_provider_name} {ai_model if ai_model else ''}\n"
+    #             print(f"\nAI RESPONSE:\n{ai_response}\n")
+
+    #         # Send response
+    #         sender_email = self.email_client.extract_sender_email(sender)
+    #         if self.email_client.send_response(
+    #             sender_email, subject, body, ai_response, attachments
+    #         ):
+    #             # Mark as read
+    #             self.email_client.mark_as_read(mail, email_id)
+    #             print(f"   Email processed and response sent")
+    #             return True
+    #         else:
+    #             print("   Error sending response")
+    #             return False
+                
+    #     except Exception as e:
+    #         print(f"   Error processing email: {e}")
+    #         return False
+    
     def process_single_email(self, mail, email_id: bytes, 
                            ai_provider_name: str, ai_model: str = "") -> bool:
         """
@@ -187,6 +277,7 @@ class EmailAIProcessor:
         Returns:
             bool: True if processed successfully
         """
+        
         try:
             # Get message
             msg = self.email_client.fetch_email(mail, email_id)
@@ -229,34 +320,40 @@ class EmailAIProcessor:
             ai_prompt = self.prepare_ai_prompt(body, attachments)
             print(f"   Prompt prepared ({len(ai_prompt)} characters)")
             
-            # Get AI provider
-            ai_provider = get_provider_by_name(ai_provider_name)
-            if not ai_provider:
-                print(f"   AI provider '{ai_provider_name}' not available")
-                return False
+            # Query AI with automatic fallback
+            print(f"   Querying AI with fallback system...")
+            ai_result = query_with_fallback(
+                prompt=ai_prompt, 
+                preferred_provider=ai_provider_name, 
+                model=ai_model,
+                max_tokens=int(os.getenv('EMAIL_MAX_TOKENS',  4000)) 
+            )
             
-            # Query AI
-            ai_response = ai_provider.query(ai_prompt, model=ai_model)
-            if not ai_response:
-                print("   No AI response obtained")
-                return False
+            if ai_result['response']:
+                ai_response = ai_result['response']
+                provider_used = ai_result['provider_used']
+                print(f"   AI response obtained from {provider_used} ({len(ai_response)} characters)")
+                
+                # Show fallback info if different provider was used
+                if provider_used != ai_provider_name:
+                    print(f"   Note: Fallback used - requested {ai_provider_name}, used {provider_used}")
+                
+                # Send response
+                sender_email = self.email_client.extract_sender_email(sender)
+                if self.email_client.send_response(
+                    sender_email, subject, body, ai_response, attachments
+                ):
+                    # Mark as read
+                    self.email_client.mark_as_read(mail, email_id)
+                    print(f"   Email processed and response sent")
+                    return True
+                else:
+                    print("   Error sending response")
+                    return False
             else:
-                print(f"   AI response obtained ({len(ai_response)} characters)")
-                # Debug: print AI response (optional)
-                ai_response += f"\n\n\n Model used: {ai_provider_name} {ai_model if ai_model else ''}\n"
-                print(f"\nAI RESPONSE:\n{ai_response}\n")
-
-            # Send response
-            sender_email = self.email_client.extract_sender_email(sender)
-            if self.email_client.send_response(
-                sender_email, subject, body, ai_response, attachments
-            ):
-                # Mark as read
-                self.email_client.mark_as_read(mail, email_id)
-                print(f"   Email processed and response sent")
-                return True
-            else:
-                print("   Error sending response")
+                print("   All AI providers failed:")
+                for error in ai_result['errors']:
+                    print(f"     - {error}")
                 return False
                 
         except Exception as e:

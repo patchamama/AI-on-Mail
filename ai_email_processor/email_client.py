@@ -286,7 +286,8 @@ AI Response:
 This response was generated automatically by an AI assistant.
 If you need further assistance, please reply to this email.
 
-System: AI Email Processor v2.0
+System: AI Email Processor v2.0 
+Generated with: AIOnMail - https://github.com/your-repo/AIOnMail 
         """.strip()
         
         return email_body

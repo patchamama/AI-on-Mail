@@ -8,6 +8,8 @@ import os
 import argparse
 from typing import Optional
 
+from ai_email_processor.ai_providers import query_with_fallback
+
 # Load environment variables
 try:
     from dotenv import load_dotenv
@@ -94,6 +96,10 @@ EMAIL_MAX_TOKENS=3000
 # Options: chatgpt, gemini, ollama
 DEFAULT_AI_PROVIDER=chatgpt
 
+# Fallback system configuration (optional)
+ENABLE_FALLBACK=true
+FALLBACK_ORDER=chatgpt,gemini,ollama
+
 # ================================
 # IMPORTANT NOTES
 # ================================
@@ -143,6 +149,53 @@ def get_default_provider() -> str:
     except:
         return 'chatgpt'  # safe fallback
 
+def show_fallback_info():
+    """Show current fallback system configuration"""
+    print("\nFallback System Configuration:")
+    print("-" * 40)
+    
+    enable_fallback = os.getenv('ENABLE_FALLBACK', 'true').lower() in ['true', '1', 'yes']
+    fallback_order = os.getenv('FALLBACK_ORDER', 'chatgpt,gemini,ollama')
+    
+    print(f"   Fallback enabled: {enable_fallback}")
+    if enable_fallback:
+        print(f"   Fallback order: {fallback_order}")
+        print("   If first provider fails, system will try others automatically")
+    else:
+        print("   Only the requested provider will be used")
+    
+    print("\nConfigurable via .env:")
+    print("   ENABLE_FALLBACK=true")
+    print("   FALLBACK_ORDER=chatgpt,gemini,ollama")
+    """Show information about available providers and current selection"""
+    try:
+        from ai_email_processor.ai_providers import get_available_providers
+        
+        providers = get_available_providers()
+        if not providers:
+            print("No AI providers configured")
+            return
+        
+        default_provider = get_default_provider()
+        
+        print("AI Provider Information:")
+        print("-" * 40)
+        for provider in providers:
+            status = " [DEFAULT]" if provider.name == default_provider else ""
+            print(f"   • {provider.display_name}{status}")
+            if provider.name == 'ollama':
+                try:
+                    models = provider.get_models()
+                    if models:
+                        print(f"     Available models: {', '.join(models[:3])}{'...' if len(models) > 3 else ''}")
+                except:
+                    pass
+        
+        print(f"\nDefault provider: {default_provider}")
+        print("Change with --provider argument")
+        
+    except ImportError:
+        print("Cannot load provider information")
 
 def show_provider_selection_info():
     """Show information about available providers and current selection"""
@@ -248,6 +301,13 @@ def show_system_info():
     except ImportError:
         print("   WARNING python-dotenv not installed (optional)")
         print("      Install: pip install python-dotenv")
+    
+    # Show provider info
+    show_provider_selection_info()
+    
+    # Show fallback configuration
+    show_fallback_info()
+
 
 
 def interactive_ai_chat():
@@ -406,19 +466,57 @@ def interactive_ai_chat():
                     context_parts.append(f"Previous - User: {user_msg}\nAI: {ai_msg}")
                 context_prompt = "\n".join(context_parts) + f"\n\nCurrent question: {user_input}"
             
-            # print(f"Context:\n{context_prompt}\n")
+            # Use fallback system with the selected provider as preferred
+            ai_result = query_with_fallback(
+                prompt=context_prompt,
+                preferred_provider=selected_provider.name,
+                model=selected_model,
+                max_tokens=os.getenv('CHAT_MAX_TOKENS',  4000) 
+            )
             
-            response = selected_provider.query(context_prompt, model=selected_model)
-            
-            if response:
-                print(f"{selected_provider.display_name}: {response}")
+            if ai_result['response']:
+                response = ai_result['response']
+                provider_used = ai_result['provider_used']
+                
+                # Show which provider was actually used
+                if provider_used != selected_provider.name:
+                    print(f"Note: Used {provider_used} (fallback from {selected_provider.name})")
+                
+                print(f"{provider_used.upper()}: {response}")
                 conversation_history.append((user_input, response))
                 
                 # Limit history size
                 if len(conversation_history) > 10:
                     conversation_history = conversation_history[-10:]
             else:
-                print(f"{selected_provider.display_name}: Sorry, I couldn't generate a response.")
+                print("Sorry, all AI providers failed:")
+                for error in ai_result['errors']:
+                    print(f"  - {error}")
+                print("Please try again or check your API configurations")
+            
+            # # Add conversation context for better responses
+            # context_prompt = user_input
+            # if conversation_history:
+            #     # Include last 2 exchanges for context
+            #     recent_history = conversation_history[-2:]
+            #     context_parts = []
+            #     for user_msg, ai_msg in recent_history:
+            #         context_parts.append(f"Previous - User: {user_msg}\nAI: {ai_msg}")
+            #     context_prompt = "\n".join(context_parts) + f"\n\nCurrent question: {user_input}"
+            
+            # # print(f"Context:\n{context_prompt}\n")
+            
+            # response = selected_provider.query(context_prompt, model=selected_model)
+            
+            # if response:
+            #     print(f"{selected_provider.display_name}: {response}")
+            #     conversation_history.append((user_input, response))
+                
+            #     # Limit history size
+            #     if len(conversation_history) > 10:
+            #         conversation_history = conversation_history[-10:]
+            # else:
+            #     print(f"{selected_provider.display_name}: Sorry, I couldn't generate a response.")
         except KeyboardInterrupt:
             print("\n\nChat interrupted. Goodbye!")
             break

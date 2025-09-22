@@ -62,8 +62,9 @@ class ChatGPTProvider(AIProvider):
             print("Error: OpenAI API key not configured")
             return None
         
-        if not model:
-            model = self.default_model
+        # if not model:
+        #     model = self.default_model
+        model = self.default_model  # Force default model for now
         
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -122,8 +123,9 @@ class GeminiProvider(AIProvider):
             print("Error: Gemini API key not configured")
             return None
         
-        if not model:
-            model = self.default_model
+        # if not model:
+        #     model = self.default_model
+        model = self.default_model  # Force default model for now
         
         url = f"{self.base_url}/{model}:generateContent?key={self.api_key}"
         
@@ -176,7 +178,7 @@ class OllamaProvider(AIProvider):
         super().__init__()
         self.name = "ollama"
         self.display_name = "Ollama (Local)"
-        self.default_model = "llama2"
+        self.default_model = os.getenv('OLLAMA_MODEL_DEFAULT', 'gpt-oss:20b')
         self.base_url = OLLAMA_URL
     
     def is_available(self) -> bool:
@@ -212,12 +214,13 @@ class OllamaProvider(AIProvider):
             "stream": False,
             "options": {
                 "temperature": kwargs.get('temperature', 0.7),
-                "num_predict": max_tokens
+                "num_predict": int(max_tokens)  
             }
         }
         
         try:
             print(f" Querying Ollama ({model})...")
+            print(f" Context: {self.base_url}/generate Model: {model} Data: {data}  ")
             response = requests.post(f"{self.base_url}/generate", json=data)
             response.raise_for_status()
             
@@ -252,3 +255,140 @@ def get_provider_by_name(name: str) -> Optional[AIProvider]:
     if provider and provider.is_available():
         return provider
     return None
+
+def query_with_fallback(prompt: str, preferred_provider: str = "chatgpt", 
+                       model: str = "", max_tokens: int = 2000, **kwargs) -> Dict[str, Any]:
+    """
+    Query AI with automatic fallback to other providers if the first one fails
+    
+    Args:
+        prompt (str): The prompt to send
+        preferred_provider (str): First provider to try
+        model (str): Specific model (optional)
+        max_tokens (int): Token limit
+        **kwargs: Additional arguments
+        
+    Returns:
+        Dict with 'response', 'provider_used', 'attempts', 'errors'
+    """
+    result = {
+        'response': None,
+        'provider_used': None,
+        'attempts': [],
+        'errors': []
+    }
+    
+    # Check if fallback is enabled
+    enable_fallback = os.getenv('ENABLE_FALLBACK', 'true').lower() in ['true', '1', 'yes']
+    
+    if not enable_fallback:
+        # Only try the preferred provider
+        provider = get_provider_by_name(preferred_provider)
+        if not provider:
+            result['errors'].append(f"Provider {preferred_provider} not available")
+            return result
+            
+        try:
+            response = provider.query(prompt, model=model, max_tokens=max_tokens, **kwargs)
+            if response and response.strip():
+                result['response'] = response
+                result['provider_used'] = preferred_provider
+                result['attempts'].append({
+                    'provider': preferred_provider,
+                    'status': 'success'
+                })
+            else:
+                result['errors'].append(f"{preferred_provider}: Empty response")
+        except Exception as e:
+            result['errors'].append(f"{preferred_provider}: {str(e)}")
+        
+        return result
+    
+    # Get all available providers
+    available_providers = get_available_providers()
+    if not available_providers:
+        result['errors'].append("No AI providers available")
+        return result
+    
+    # Create priority order from environment variable or default
+    fallback_order = os.getenv('FALLBACK_ORDER', 'chatgpt,gemini,ollama')
+    preferred_order = [p.strip() for p in fallback_order.split(',')]
+    
+    # Get available provider names
+    provider_names = [p.name for p in available_providers]
+    
+    # Put preferred provider first if available, then follow the configured order
+    ordered_providers = []
+    if preferred_provider in provider_names:
+        ordered_providers.append(preferred_provider)
+    
+    # Add remaining providers in fallback order
+    for provider_name in preferred_order:
+        if provider_name in provider_names and provider_name not in ordered_providers:
+            ordered_providers.append(provider_name)
+    
+    # Add any remaining providers not in the configured order
+    for provider_name in provider_names:
+        if provider_name not in ordered_providers:
+            ordered_providers.append(provider_name)
+    
+    # Try each provider in order
+    for i, provider_name in enumerate(ordered_providers):
+        provider = get_provider_by_name(provider_name)
+        if not provider:
+            continue
+            
+        attempt_info = {
+            'provider': provider_name,
+            'model': model if model else provider.default_model,
+            'status': 'attempting',
+            'attempt_number': i + 1
+        }
+        result['attempts'].append(attempt_info)
+        
+        try:
+            if i == 0:
+                print(f"Trying {provider.display_name}...")
+            else:
+                print(f"Fallback {i}: Trying {provider.display_name}...")
+            
+            # Use provider-specific model or default
+            query_model = model if model else provider.default_model
+            
+            response = provider.query(prompt, model=query_model, max_tokens=max_tokens, **kwargs)
+            
+            if response and response.strip():
+                result['response'] = response
+                result['provider_used'] = provider_name
+                attempt_info['status'] = 'success'
+                
+                if i == 0:
+                    print(f"Success with {provider.display_name}")
+                else:
+                    print(f"Fallback success with {provider.display_name}")
+                break
+            else:
+                attempt_info['status'] = 'empty_response'
+                result['errors'].append(f"{provider_name}: Empty response")
+                print(f"{provider.display_name}: Empty response, trying next...")
+                
+        except Exception as e:
+            attempt_info['status'] = 'error'
+            attempt_info['error'] = str(e)
+            error_msg = f"{provider_name}: {str(e)}"
+            result['errors'].append(error_msg)
+            
+            # Check for specific error types
+            error_lower = str(e).lower()
+            if any(term in error_lower for term in ['rate limit', 'quota exceeded', 'billing', 'unauthorized', 'forbidden', '429', '403']):
+                print(f"{provider.display_name}: Rate limit/quota error detected, trying next provider...")
+            elif any(term in error_lower for term in ['timeout', 'connection', 'network']):
+                print(f"{provider.display_name}: Connection error, trying next provider...")
+            else:
+                print(f"{provider.display_name}: Error - {str(e)}")
+            continue
+    
+    if not result['response']:
+        print("All available AI providers failed")
+    
+    return result

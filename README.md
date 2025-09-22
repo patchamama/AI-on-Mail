@@ -330,7 +330,7 @@ The system prints detailed logs for each operation:
 - **Issues**: GitHub Issues for bugs and features
 - **Discussions**: GitHub Discussions for questions
 
-## TODO
+## TODO
 - [x] Initial implementation with OpenAI and Ollama
 - [x] Add Google Gemini support
 - [x] Document attachment processing (PDF, Word)
@@ -343,7 +343,7 @@ The system prints detailed logs for each operation:
 - [x] Email filtering based on customizable keywords
 - [x] Automatic marking of processed emails as read
 - [x] UTF-8 and special character support
-- [ ] Add fallback system if primary AI provider fails 
+- [x] Add fallback system if primary AI provider fails 
 - [ ] Implement advanced AI prompt customization
 - [ ] Add more AI providers (e.g., Hugging Face, Cohere) 
 - [ ] Web dashboard for configuration and monitoring
@@ -352,6 +352,11 @@ The system prints detailed logs for each operation:
 - [ ] Rate limiting and retry logic for AI API calls
 - [ ] Support for email threading and conversation history
 - [ ] Implement a web interface for users to submit queries directly
+- [ ] Test and add ollama models support using colab
+- [ ] Customizable prompt templates for responses using keywords in body 
+- [ ] Add API to allow external systems to trigger email processing and retrieve results in the interaction with chat threads
+- [ ] Add a logging system to keep track of processed emails and AI responses for auditing purposes
+- [ ] Create a **God mode** access to allow advanced users to customize AI parameters or the use of other not chippers models as GTP-5 or change parameters as like temperature, max tokens, etc., via email commands
 
 ## Contributing
 Contributions are welcome! Feel free to open issues or pull requests to improve the project.
