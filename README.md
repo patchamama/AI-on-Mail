@@ -343,6 +343,7 @@ The system prints detailed logs for each operation:
 - [x] Email filtering based on customizable keywords
 - [x] Automatic marking of processed emails as read
 - [x] UTF-8 and special character support
+- [ ] Add fallback system if primary AI provider fails 
 - [ ] Implement advanced AI prompt customization
 - [ ] Add more AI providers (e.g., Hugging Face, Cohere) 
 - [ ] Web dashboard for configuration and monitoring
