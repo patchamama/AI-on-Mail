@@ -330,6 +330,28 @@ The system prints detailed logs for each operation:
 - **Issues**: GitHub Issues for bugs and features
 - **Discussions**: GitHub Discussions for questions
 
+## TODO
+- [x] Initial implementation with OpenAI and Ollama
+- [x] Add Google Gemini support
+- [x] Document attachment processing (PDF, Word)
+- [x] Interactive CLI mode
+- [x] Environment variable configuration
+- [x] Email threading support
+- [x] Robust error handling and logging
+- [x] Unit tests for core components
+- [x] Support for multiple AI providers and fallback
+- [x] Email filtering based on customizable keywords
+- [x] Automatic marking of processed emails as read
+- [x] UTF-8 and special character support
+- [ ] Implement advanced AI prompt customization
+- [ ] Add more AI providers (e.g., Hugging Face, Cohere) 
+- [ ] Web dashboard for configuration and monitoring
+- [ ] Unit tests and CI/CD integration
+- [ ] Docker containerization for easy deployment
+- [ ] Rate limiting and retry logic for AI API calls
+- [ ] Support for email threading and conversation history
+- [ ] Implement a web interface for users to submit queries directly
+
 ## Contributing
 Contributions are welcome! Feel free to open issues or pull requests to improve the project.
 
