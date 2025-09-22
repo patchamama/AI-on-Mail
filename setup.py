@@ -3,6 +3,7 @@ Setup script for AI Email Processor
 """
 
 from setuptools import setup, find_packages
+from ai_email_processor.constants import __version__
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -12,7 +13,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="ai-email-processor",
-    version="2.0.0",
+    version=__version__,
     author="AI Email Processor Team",
     description="Automated email processing with AI",
     long_description=long_description,

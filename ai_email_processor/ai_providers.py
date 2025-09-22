@@ -103,8 +103,6 @@ class ChatGPTProvider(AIProvider):
 class GeminiProvider(AIProvider):
     """Provider for Google Gemini"""
     
-    from ai_email_processor.constants import GEMINI_URL
-    
     def __init__(self):
         super().__init__()
         self.name = "gemini"

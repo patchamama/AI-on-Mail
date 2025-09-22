@@ -14,6 +14,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.header import decode_header
 from typing import Optional, List, Dict, Any, Tuple
+from ai_email_processor import __version__
+
 
 
 class EmailClient:
@@ -282,12 +284,11 @@ Original Message:
 AI Response:
 {ai_response}
 
-{'-' * 50}
 This response was generated automatically by an AI assistant.
 If you need further assistance, please reply to this email.
 
-System: AI Email Processor v2.0 
-Generated with: AIOnMail - https://github.com/your-repo/AIOnMail 
+System: AI Email Processor v{__version__} 
+Generated with: AIOnMail - https://github.com/patchamama/AI-on-Mail
         """.strip()
         
         return email_body
