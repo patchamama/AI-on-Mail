@@ -10,6 +10,7 @@ import requests
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, List
 from openai import OpenAI
+from ai_email_processor.constants import GEMINI_URL, OLLAMA_URL, OPENAI_URL
 
 
 class AIProvider(ABC):
@@ -49,7 +50,7 @@ class ChatGPTProvider(AIProvider):
         self.display_name = "ChatGPT (OpenAI)"
         self.default_model = os.getenv('OPENAI_MODEL', 'gpt-5-mini')
         self.api_key = os.getenv('OPENAI_API_KEY')
-        self.base_url = "https://api.openai.com/v1/chat/completions"
+        self.base_url = OPENAI_URL
     
     def is_available(self) -> bool:
         """Check if OpenAI API is configured"""
@@ -101,14 +102,16 @@ class ChatGPTProvider(AIProvider):
 class GeminiProvider(AIProvider):
     """Provider for Google Gemini"""
     
+    from ai_email_processor.constants import GEMINI_URL
+    
     def __init__(self):
         super().__init__()
         self.name = "gemini"
         self.display_name = "Gemini (Google)"
-        self.default_model = "gemini-1.5-flash"
+        self.default_model = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
         self.api_key = os.getenv('GEMINI_API_KEY')
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta/models"
-    
+        self.base_url = GEMINI_URL
+
     def is_available(self) -> bool:
         """Check if Gemini API is configured"""
         return bool(self.api_key)
@@ -174,7 +177,7 @@ class OllamaProvider(AIProvider):
         self.name = "ollama"
         self.display_name = "Ollama (Local)"
         self.default_model = "llama2"
-        self.base_url = "http://localhost:11434/api"
+        self.base_url = OLLAMA_URL
     
     def is_available(self) -> bool:
         """Check if Ollama is running"""
