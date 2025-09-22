@@ -216,7 +216,7 @@ def interactive_ai_chat():
             try:
                 models = provider.get_models()
                 if models:
-                    print(f"      Models: {', '.join(models[:3])}{'...' if len(models) > 3 else ''}")
+                    print(f"      Models: {', '.join(models[:5])}{'...' if len(models) > 5 else ''}")
             except:
                 pass
     

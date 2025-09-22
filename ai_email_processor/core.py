@@ -204,8 +204,9 @@ class EmailAIProcessor:
             else:
                 print(f"   AI response obtained ({len(ai_response)} characters)")
                 # Debug: print AI response (optional)
+                ai_response += f"\n\n\n Model used: {ai_provider_name} {ai_model if ai_model else ''}\n"
                 print(f"\nAI RESPONSE:\n{ai_response}\n")
-            
+
             # Send response
             sender_email = self.email_client.extract_sender_email(sender)
             if self.email_client.send_response(

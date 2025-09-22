@@ -9,6 +9,7 @@ import os
 import requests
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, List
+from openai import OpenAI
 
 
 class AIProvider(ABC):
@@ -46,7 +47,7 @@ class ChatGPTProvider(AIProvider):
         super().__init__()
         self.name = "chatgpt"
         self.display_name = "ChatGPT (OpenAI)"
-        self.default_model = "gpt-3.5-turbo"
+        self.default_model = os.getenv('OPENAI_MODEL', 'gpt-5-mini')
         self.api_key = os.getenv('OPENAI_API_KEY')
         self.base_url = "https://api.openai.com/v1/chat/completions"
     
@@ -71,23 +72,29 @@ class ChatGPTProvider(AIProvider):
         data = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": max_tokens,
+            # "max_tokens": max_tokens,
             "temperature": kwargs.get('temperature', 0.7)
         }
         
         try:
             print(f" Querying ChatGPT ({model})...")
-            response = requests.post(self.base_url, headers=headers, json=data)
-            response.raise_for_status()
-            
-            result = response.json()
-            return result['choices'][0]['message']['content'].strip()
+            client = OpenAI()
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            return response.choices[0].message.content.strip()
             
         except requests.exceptions.RequestException as e:
             print(f"Error in ChatGPT request: {e}")
             return None
         except KeyError as e:
             print(f"Error processing ChatGPT response: {e}")
+            return None
+        except Exception as e:
+            print(f"Unexpected error: {e}")
             return None
 
 
