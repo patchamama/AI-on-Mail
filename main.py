@@ -9,6 +9,7 @@ import argparse
 from typing import Optional
 
 from ai_email_processor.ai_providers import query_with_fallback
+from ai_email_processor import __version__
 
 # Load environment variables
 try:
@@ -674,6 +675,7 @@ def main():
         
         else:
             # Interactive mode by default
+            print(f"\n\nVersion: {__version__}")
             print(f"\nINTERACTIVE MODE")
             print("Available options:")
             print("1. Process emails once")
