@@ -94,7 +94,11 @@ SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=587
 
 # Optional: Customize AI keywords (comma-separated)
-# AI_KEYWORDS=AI,IA,Artificial Intelligence,Machine Learning,ChatGPT, Bot, Inteligencia Artificial
+AI_KEYWORDS=AI,IA,Artificial Intelligence,Machine Learning,ChatGPT, Bot, Inteligencia Artificial
+
+# Default AI provider when multiple are available (optional)
+# Options: chatgpt, gemini, ollama
+DEFAULT_AI_PROVIDER=chatgpt
 ```
 
 ### API Keys

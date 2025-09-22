@@ -85,6 +85,15 @@ MAX_DOCUMENT_SIZE=10000
 # Interval between email checks (seconds)
 CHECK_INTERVAL=300
 
+# Token limits for AI responses (optional)
+DEFAULT_MAX_TOKENS=2000
+CHAT_MAX_TOKENS=4000
+EMAIL_MAX_TOKENS=3000
+
+# Default AI provider when multiple are available (optional)
+# Options: chatgpt, gemini, ollama
+DEFAULT_AI_PROVIDER=chatgpt
+
 # ================================
 # IMPORTANT NOTES
 # ================================
@@ -109,7 +118,63 @@ CHECK_INTERVAL=300
         print(f"Error creating .env file: {e}")
         return False
 
+def get_default_provider() -> str:
+    """
+    Get the best available AI provider based on configuration priority
+    Priority order: ChatGPT -> Gemini -> Ollama
+    """
+    try:
+        from ai_email_processor.ai_providers import get_available_providers
+        
+        providers = get_available_providers()
+        if not providers:
+            return 'chatgpt'  # fallback
+        
+        # Priority order for default selection
+        priority_order = ['chatgpt', 'gemini', 'ollama']
+        
+        for preferred in priority_order:
+            for provider in providers:
+                if provider.name == preferred:
+                    return preferred
+        
+        # If none match, return first available
+        return providers[0].name
+    except:
+        return 'chatgpt'  # safe fallback
 
+
+def show_provider_selection_info():
+    """Show information about available providers and current selection"""
+    try:
+        from ai_email_processor.ai_providers import get_available_providers
+        
+        providers = get_available_providers()
+        if not providers:
+            print("No AI providers configured")
+            return
+        
+        default_provider = get_default_provider()
+        
+        print("AI Provider Information:")
+        print("-" * 40)
+        for provider in providers:
+            status = " [DEFAULT]" if provider.name == default_provider else ""
+            print(f"   • {provider.display_name}{status}")
+            if provider.name == 'ollama':
+                try:
+                    models = provider.get_models()
+                    if models:
+                        print(f"     Available models: {', '.join(models[:3])}{'...' if len(models) > 3 else ''}")
+                except:
+                    pass
+        
+        print(f"\nDefault provider: {default_provider}")
+        print("Change with --provider argument")
+        
+    except ImportError:
+        print("Cannot load provider information")
+        
 def check_configuration() -> bool:
     """
     Check if configuration is valid
@@ -143,9 +208,9 @@ def check_configuration() -> bool:
     
     print("Configuration valid")
     print(f"Email: {os.getenv('EMAIL_ADDRESS')}")
-    print("Available AI providers:")
-    for provider in providers:
-        print(f"   • {provider.display_name}")
+    
+    # Show provider info with priorities
+    show_provider_selection_info()
     
     return True
 
@@ -413,8 +478,8 @@ def main():
     parser.add_argument(
         '--provider', 
         choices=['chatgpt', 'gemini', 'ollama'],
-        default='gemini',
-        help='AI provider to use (default: gemini)'
+        default=os.getenv('DEFAULT_AI_PROVIDER', 'chatgpt'),
+        help='AI provider to use (default: chatgpt, configurable via DEFAULT_AI_PROVIDER env var)'
     )
     parser.add_argument(
         '--model',
