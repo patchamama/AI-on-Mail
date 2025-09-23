@@ -13,6 +13,7 @@ from .ai_providers import get_available_providers, get_provider_by_name, query_w
 from .document_parser import DocumentParser
 from .email_client import EmailClient
 from .prompt_templates import PromptTemplateManager
+from .word_export import WordExportManager, check_word_export_requirements
 
 
 class EmailAIProcessor:
@@ -32,6 +33,12 @@ class EmailAIProcessor:
         self.document_parser = DocumentParser(
             max_size=self.config.get('MAX_DOCUMENT_SIZE', 10000)
         )
+        self.word_export_manager = WordExportManager(
+            export_dir=self.config.get('word_export_dir', 'ai_responses')
+        ) if self.config.get('enable_word_export', True) else None
+        self.word_export_enabled = self.config.get('enable_word_export', True) and check_word_export_requirements()
+        self.prompt_template_manager = PromptTemplateManager()
+        self.is_superuser = False  # Placeholder for future use
         
         # Validate configuration
         self._validate_configuration()
@@ -64,6 +71,10 @@ class EmailAIProcessor:
             'ai_keywords': ai_keywords,
             'max_document_size': int(os.getenv('MAX_DOCUMENT_SIZE', '10000')),
             'check_interval': int(os.getenv('CHECK_INTERVAL', '300')),
+            
+            # Word export configuration
+            'enable_word_export': os.getenv('ENABLE_WORD_EXPORT', 'true').lower() in ['true', '1', 'yes'],
+            'word_export_dir': os.getenv('WORD_EXPORT_DIR', 'ai_responses'),
         }
     
     def _validate_configuration(self):
@@ -255,7 +266,7 @@ class EmailAIProcessor:
                 provider_used = ai_result['provider_used']
                 attachments_content = "\n".join([att['content'] for att in attachments]) if attachments else ""
                 content_type, template =  template_manager.detect_content_type(body + "\n" + attachments_content)
-                print(f"   Content type detected: {content_type} (template: {template})")
+                # print(f"   Content type detected: {content_type} (template: {template})")
                 ai_response += f"""\n\n
 {'-' * 50}
 AI Model used: {provider_used.capitalize()} {" - "+model_result if model_result else ''}
@@ -267,11 +278,38 @@ Template used: {content_type.capitalize()}
                 # Show fallback info if different provider was used
                 if provider_used != ai_provider_name:
                     print(f"   Note: Fallback used - requested {ai_provider_name.capitalize()}, used {provider_used}")
+                    
+                # Export to Word document if enabled
+                word_file_path = None
+                if self.word_export_enabled and self.word_export_manager:
+                    print("   Generating Word document...")
+                    
+                    # Detect content type for metadata
+                    content_type, _ = self.prompt_template_manager.detect_content_type(
+                        body + (" ".join([att.get('content', '') for att in attachments]) if attachments else "")
+                    )
+                    
+                    export_metadata = {
+                        # 'sender': sender_email,
+                        'subject': subject,
+                        'provider_used': provider_used,
+                        'model': ai_model or 'default',
+                        'content_type': content_type,
+                        # 'is_superuser': is_superuser,
+                        'attachments_count': len(attachments) if attachments else 0
+                    }
+                    
+                    word_file_path = self.word_export_manager.export_ai_response(ai_response, export_metadata)
+                    
+                    if word_file_path:
+                        print(f"   Word document created: {word_file_path}")
+                    else:
+                        print("   Warning: Could not create Word document")
 
                 # Send response
                 sender_email = self.email_client.extract_sender_email(sender)
                 if self.email_client.send_response(
-                    sender_email, subject, body, ai_response, attachments
+                    sender_email, subject, body, ai_response, attachments, word_file_path
                 ):
                     # Mark as read
                     self.email_client.mark_as_read(mail, email_id)

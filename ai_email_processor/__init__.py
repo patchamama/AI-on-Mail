@@ -3,7 +3,7 @@ AI Email Processor Package
 Automated email processing with AI
 """
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 __author__ = "AI Email Processor Team"
 
 from .core import EmailAIProcessor

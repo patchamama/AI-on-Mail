@@ -143,7 +143,7 @@ class GeminiProvider(AIProvider):
         
         try:
             print(f" Querying Gemini ({model})...")
-            print(f" Context: {url} Model: {model} Header: {headers} Data: {data}  ")
+            # print(f" Context: {url} Model: {model} Header: {headers} Data: {data}  ")
             response = requests.post(url, headers=headers, json=data)
             response.raise_for_status()
             
@@ -218,7 +218,7 @@ class OllamaProvider(AIProvider):
         
         try:
             print(f" Querying Ollama ({model})...")
-            print(f" Context: {self.base_url}/generate Model: {model} Data: {data}  ")
+            # print(f" Context: {self.base_url}/generate Model: {model} Data: {data}  ")
             response = requests.post(f"{self.base_url}/generate", json=data)
             response.raise_for_status()
             

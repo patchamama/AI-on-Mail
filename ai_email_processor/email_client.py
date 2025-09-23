@@ -7,6 +7,7 @@ and SMTP for sending responses.
 
     
 import imaplib
+import os
 import smtplib
 import email
 import re
@@ -210,7 +211,8 @@ class EmailClient:
     
     def send_response(self, to_email: str, original_subject: str, 
                      original_body: str, ai_response: str,
-                     attachments_info: List[Dict[str, Any]] = None) -> bool:
+                     attachments_info: List[Dict[str, Any]] = None, 
+                     word_file_path: str = None) -> bool:
         """
         Send automatic response with AI answer
         
@@ -220,6 +222,7 @@ class EmailClient:
             original_body (str): Original email body
             ai_response (str): AI-generated response
             attachments_info (List[Dict]): Processed attachments info
+            word_file_path (str): Path to Word document to attach (optional)
             
         Returns:
             bool: True if sent successfully
@@ -233,10 +236,28 @@ class EmailClient:
             
             # Email body
             email_body = self._format_response_body(
-                original_body, ai_response, attachments_info
+                original_body, ai_response, attachments_info, has_word_attachment=bool(word_file_path)
             )
             
             msg.attach(MIMEText(email_body, 'plain', 'utf-8'))
+            
+            # Attach Word document if provided
+            if word_file_path and os.path.exists(word_file_path):
+                try:
+                    from email.mime.application import MIMEApplication
+                    
+                    with open(word_file_path, 'rb') as f:
+                        word_attachment = MIMEApplication(f.read(), _subtype='vnd.openxmlformats-officedocument.wordprocessingml.document')
+                        
+                    # Get filename from path
+                    filename = os.path.basename(word_file_path)
+                    word_attachment.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+                    msg.attach(word_attachment)
+                    
+                    print(f"   Word document attached: {filename}")
+                    
+                except Exception as e:
+                    print(f"   Warning: Could not attach Word document: {e}")
             
             # Connect to SMTP
             server = smtplib.SMTP(self.config['smtp_server'], self.config['smtp_port'])
@@ -256,7 +277,8 @@ class EmailClient:
             return False
     
     def _format_response_body(self, original_body: str, ai_response: str, 
-                             attachments_info: List[Dict[str, Any]] = None) -> str:
+                             attachments_info: List[Dict[str, Any]] = None,
+                             has_word_attachment: bool = False) -> str:
         """
         Format automatic response body
         
@@ -264,6 +286,7 @@ class EmailClient:
             original_body (str): Original body
             ai_response (str): AI response
             attachments_info (List[Dict]): Attachments info
+            has_word_attachment (bool): Whether Word document is attached
             
         Returns:
             str: Formatted response body
@@ -274,13 +297,19 @@ class EmailClient:
             attachments_section = "\nProcessed documents:\n"
             for att in attachments_info:
                 attachments_section += f"   • {att['filename']} ({att['type'].upper()}, {att['size']} characters)\n"
+                
+        # Word attachment notice
+        word_attachment_notice = ""
+        if has_word_attachment:
+            word_attachment_notice = "\nATTACHMENT: This response includes a formatted Word document with the complete AI analysis.\n"
+      
         
         email_body = f"""AI AUTOMATED RESPONSE
 {'=' * 50}
 
 Original Message:
 {original_body[:500]}{'...' if len(original_body) > 500 else ''}
-{attachments_section}
+{attachments_section}{word_attachment_notice}
 AI Response:
 {ai_response}
 

@@ -103,6 +103,16 @@ ENABLE_FALLBACK=true
 FALLBACK_ORDER=chatgpt,gemini,ollama
 
 # ================================
+# WORD DOCUMENT EXPORT
+# ================================
+
+# Enable Word document generation from AI responses
+ENABLE_WORD_EXPORT=true
+
+# Directory to save Word documents
+WORD_EXPORT_DIR=ai_responses
+
+# ================================
 # IMPORTANT NOTES
 # ================================
 
@@ -537,7 +547,7 @@ def interactive_ai_chat():
                 if provider_used != selected_provider.name:
                     print(f"Note: Used {provider_used} (fallback from {selected_provider.name})")
                 
-                print(f"{provider_used.upper()}: {response}")
+                # print(f"{provider_used.upper()}: {response}")
                 conversation_history.append((user_input, response))
                 
                 # Limit history size
