@@ -12,6 +12,7 @@ from typing import Dict, Any, List, Optional
 from .ai_providers import get_available_providers, get_provider_by_name, query_with_fallback
 from .document_parser import DocumentParser
 from .email_client import EmailClient
+from .prompt_templates import PromptTemplateManager
 
 
 class EmailAIProcessor:
@@ -229,13 +230,16 @@ class EmailAIProcessor:
                 return False
             
             # Prepare AI prompt
-            ai_prompt = self.prepare_ai_prompt(body, attachments)
-            print(f"   Prompt prepared ({len(ai_prompt)} characters)")
+            # ai_prompt = self.prepare_ai_prompt(body, attachments)
+            # Initialize prompt template manager        
+            template_manager = PromptTemplateManager()
+            specialized_prompt = template_manager.generate_prompt(body, attachments)
+            print(f"   Prompt prepared ({len(specialized_prompt)} characters)")
             
             # Query AI with automatic fallback
             print(f"   Querying AI with fallback system...")
             ai_result = query_with_fallback(
-                prompt=ai_prompt, 
+                prompt=specialized_prompt, #ai_prompt, 
                 preferred_provider=ai_provider_name, 
                 model=ai_model,
                 max_tokens=int(os.getenv('EMAIL_MAX_TOKENS',  4000)) 
@@ -249,9 +253,13 @@ class EmailAIProcessor:
                         model_result = f"{attempt['model'] if attempt['model'] else ''}"
                 ai_response = ai_result['response']
                 provider_used = ai_result['provider_used']
+                attachments_content = "\n".join([att['content'] for att in attachments]) if attachments else ""
+                content_type, template =  template_manager.detect_content_type(body + "\n" + attachments_content)
+                print(f"   Content type detected: {content_type} (template: {template})")
                 ai_response += f"""\n\n
 {'-' * 50}
 AI Model used: {provider_used.capitalize()} {" - "+model_result if model_result else ''}
+Template used: {content_type.capitalize()}
 """
                 print(f"   AI response obtained from {provider_used.capitalize()}  ({len(ai_response)} characters)")
 

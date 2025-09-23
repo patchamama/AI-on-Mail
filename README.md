@@ -28,7 +28,8 @@ ai_email_processor_project/
 │   ├── core.py                  # Main EmailAIProcessor class
 │   ├── document_parser.py       # PDF/Word text extraction
 │   ├── email_client.py          # IMAP/SMTP client
-│   └── ai_providers.py          # AI APIs
+│   ├── ai_providers.py          # AI APIs
+│   └── prompt_templates.py      # Prompt templates for different tasks
 ├── .env                         # Environment variables
 ├── requirements.txt             # Dependencies
 ├── main.py                      # Main script
@@ -201,7 +202,7 @@ processor.monitor_emails(
 ### Supported AI providers
 
 1. **ChatGPT (OpenAI)**
-   - Models: gpt-3.5-turbo, gpt-4, etc.
+   - Models: gpt-5 gpt-5-mini, etc.
    - Requires: `OPENAI_API_KEY`
 
 2. **Gemini (Google)**
@@ -344,6 +345,7 @@ The system prints detailed logs for each operation:
 - [x] Automatic marking of processed emails as read
 - [x] UTF-8 and special character support
 - [x] Add fallback system if primary AI provider fails 
+- [ ] Generete results as PDF or word attachment in the response email 
 - [ ] Implement advanced AI prompt customization
 - [ ] Add more AI providers (e.g., Hugging Face, Cohere) 
 - [ ] Web dashboard for configuration and monitoring
@@ -353,7 +355,7 @@ The system prints detailed logs for each operation:
 - [ ] Support for email threading and conversation history
 - [ ] Implement a web interface for users to submit queries directly
 - [ ] Test and add ollama models support using colab
-- [ ] Customizable prompt templates for responses using keywords in body 
+- [x] Customizable prompt templates for responses using keywords in body 
 - [ ] Add API to allow external systems to trigger email processing and retrieve results in the interaction with chat threads
 - [ ] Add a logging system to keep track of processed emails and AI responses for auditing purposes
 - [ ] Create a **God mode** access to allow advanced users to customize AI parameters or the use of other not chippers models as GTP-5 or change parameters as like temperature, max tokens, etc., via email commands

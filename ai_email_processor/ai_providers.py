@@ -149,7 +149,7 @@ class GeminiProvider(AIProvider):
             
             result = response.json()
             
-            print(f" Result: {result} ")
+            # print(f" Result: {result} ")
             
             if 'candidates' in result and len(result['candidates']) > 0:
                 candidate = result['candidates'][0]

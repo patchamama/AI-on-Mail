@@ -10,6 +10,7 @@ from typing import Optional
 
 from ai_email_processor.ai_providers import query_with_fallback
 from ai_email_processor import __version__
+from ai_email_processor.prompt_templates import PromptTemplateManager
 
 # Load environment variables
 try:
@@ -149,6 +150,39 @@ def get_default_provider() -> str:
         return providers[0].name
     except:
         return 'chatgpt'  # safe fallback
+    
+    
+
+def show_prompt_templates():
+    """Show available prompt templates and their information"""
+    print("=" * 60)
+    print("AVAILABLE PROMPT TEMPLATES")
+    print("=" * 60)
+    
+    try:        
+        template_manager = PromptTemplateManager()
+        templates_info = template_manager.list_templates()
+        
+        print(f"\nTotal templates: {len(templates_info)}")
+        print("\nTemplate Details:")
+        print("-" * 50)
+        
+        for template in templates_info:
+            print(f"\nName: {template['name'].upper()}")
+            print(f"Priority: {template['priority']}")
+            print(f"Keywords ({template['keywords_count']}): {', '.join(template['sample_keywords'])}")
+            if len(template['sample_keywords']) < template['keywords_count']:
+                remaining = template['keywords_count'] - len(template['sample_keywords'])
+                print(f"... and {remaining} more keywords")
+        
+        print("\nHow it works:")
+        print("1. System analyzes email content for keywords")
+        print("2. Selects the highest priority matching template")
+        print("3. Generates specialized prompt for that content type")
+        print("4. Falls back to generic template if no matches")
+        
+    except ImportError as e:
+        print(f"Could not load template information: {e}")
 
 def show_fallback_info():
     """Show current fallback system configuration"""
@@ -412,6 +446,15 @@ def interactive_ai_chat():
                 print("   clear    - Clear conversation history")
                 print("   switch   - Switch AI provider")
                 print("   test     - Run predefined test")
+                print("   templates - List available templates")
+                continue
+            
+             # Templates list command
+            if user_input.lower() == 'templates':
+                templates = template_manager.list_templates()
+                print("\nAvailable templates:")
+                for template in templates:
+                    print(f"   • {template['name']} (priority: {template['priority']})")
                 continue
             
             # History command
@@ -466,10 +509,21 @@ def interactive_ai_chat():
                 for user_msg, ai_msg in recent_history:
                     context_parts.append(f"Previous - User: {user_msg}\nAI: {ai_msg}")
                 context_prompt = "\n".join(context_parts) + f"\n\nCurrent question: {user_input}"
+                
+                
+            # Initialize prompt template manager
+            template_manager = PromptTemplateManager()
+
+            # Use template manager to create specialized prompt
+            specialized_prompt = template_manager.generate_prompt(context_prompt)
+            
+            # Detect which template was used for display
+            content_type, _ = template_manager.detect_content_type(user_input)
+            last_template_used = content_type
             
             # Use fallback system with the selected provider as preferred
             ai_result = query_with_fallback(
-                prompt=context_prompt,
+                prompt=specialized_prompt, #context_prompt,
                 preferred_provider=selected_provider.name,
                 model=selected_model,
                 max_tokens=os.getenv('CHAT_MAX_TOKENS',  4000) 
