@@ -29,12 +29,13 @@ ai_email_processor_project/
 │   ├── document_parser.py       # PDF/Word text extraction
 │   ├── email_client.py          # IMAP/SMTP client
 │   ├── ai_providers.py          # AI APIs
-│   └── prompt_templates.py      # Prompt templates for different tasks
+│   ├── prompt_templates.py      # Prompt templates for different tasks
+│   ├── word_export.py           # Word document generation using python-docx
+│   └── superuser_auth.py        # Superuser authentication and management
 ├── .env                         # Environment variables
 ├── requirements.txt             # Dependencies
 ├── main.py                      # Main script
 └── README.md                    # This documentation
-```
 
 ## How does it work?
 1. A server with Internet access runs the AIOnMail script.
